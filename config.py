@@ -7,6 +7,10 @@ load_dotenv()
 
 # --- API Keys ---
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+# The lab keeps the OpenAI-compatible variable name for library compatibility,
+# while requests are routed to OpenRouter rather than OpenAI.
+OPENROUTER_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://openrouter.ai/api/v1")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/free")
 
 # --- Qdrant ---
 QDRANT_HOST = "localhost"
