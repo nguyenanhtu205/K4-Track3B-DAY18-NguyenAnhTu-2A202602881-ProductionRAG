@@ -16,7 +16,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from src.m1_chunking import load_documents, chunk_basic
 from src.m2_search import DenseSearch
 from src.m4_eval import load_test_set, evaluate_ragas, save_report
-from config import NAIVE_COLLECTION
+from config import (NAIVE_COLLECTION, OPENAI_API_KEY, OPENROUTER_BASE_URL,
+                    OPENROUTER_ENABLE_LLM_CALLS, OPENROUTER_MODEL)
 
 
 def main():
@@ -38,11 +39,13 @@ def main():
     test_set = load_test_set()
     questions, answers, all_contexts, ground_truths = [], [], [], []
 
-    from config import OPENAI_API_KEY
     llm_client = None
-    if OPENAI_API_KEY:
+    if OPENAI_API_KEY and OPENROUTER_ENABLE_LLM_CALLS:
         from openai import OpenAI
-        llm_client = OpenAI()
+        llm_client = OpenAI(
+            api_key=OPENAI_API_KEY, base_url=OPENROUTER_BASE_URL,
+            timeout=15, max_retries=0,
+        )
 
     for i, item in enumerate(test_set):
         results = search.search(item["question"], top_k=3, collection=NAIVE_COLLECTION)
@@ -51,12 +54,15 @@ def main():
         if llm_client and contexts:
             try:
                 context_str = "\n\n".join(contexts)
-                resp = llm_client.chat.completions.create(model="gpt-4o-mini", messages=[
+                resp = llm_client.chat.completions.create(model=OPENROUTER_MODEL, messages=[
                     {"role": "system", "content": "Trả lời CHỈ dựa trên context. Nếu không có → nói 'Không tìm thấy.'"},
                     {"role": "user", "content": f"Context:\n{context_str}\n\nCâu hỏi: {item['question']}"},
-                ])
+                ], max_tokens=200)
                 answer = resp.choices[0].message.content
             except Exception:
+                # A free provider can be temporarily rate-limited. Do not make
+                # the same failing request for every remaining test question.
+                llm_client = None
                 answer = contexts[0]
         else:
             answer = contexts[0] if contexts else "Không tìm thấy."

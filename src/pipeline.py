@@ -18,6 +18,9 @@ from src.m5_enrichment import enrich_chunks
 from config import RERANK_TOP_K
 
 
+_generation_available = True
+
+
 def build_pipeline():
     """Build production RAG pipeline."""
     print("=" * 60)
@@ -63,24 +66,30 @@ def build_pipeline():
 
 def run_query(query: str, search: HybridSearch, reranker: CrossEncoderReranker) -> tuple[str, list[str]]:
     """Run single query through pipeline."""
+    global _generation_available
     results = search.search(query)
     docs = [{"text": r.text, "score": r.score, "metadata": r.metadata} for r in results]
     reranked = reranker.rerank(query, docs, top_k=RERANK_TOP_K)
     contexts = [r.text for r in reranked] if reranked else [r.text for r in results[:3]]
 
-    from config import OPENAI_API_KEY, OPENROUTER_BASE_URL, OPENROUTER_MODEL
-    if OPENAI_API_KEY and contexts:
+    from config import (OPENAI_API_KEY, OPENROUTER_BASE_URL,
+                        OPENROUTER_ENABLE_LLM_CALLS, OPENROUTER_MODEL)
+    if OPENAI_API_KEY and OPENROUTER_ENABLE_LLM_CALLS and contexts and _generation_available:
         try:
             from openai import OpenAI
-            client = OpenAI(api_key=OPENAI_API_KEY, base_url=OPENROUTER_BASE_URL)
+            client = OpenAI(
+                api_key=OPENAI_API_KEY, base_url=OPENROUTER_BASE_URL,
+                timeout=15, max_retries=0,
+            )
             context_str = "\n\n".join(contexts)
             resp = client.chat.completions.create(model=OPENROUTER_MODEL, messages=[
                 {"role": "system", "content": "Trả lời CHỈ dựa trên context. Nếu không có → nói 'Không tìm thấy.'"},
                 {"role": "user", "content": f"Context:\n{context_str}\n\nCâu hỏi: {query}"},
-            ])
+            ], max_tokens=200)
             answer = resp.choices[0].message.content
         except Exception as e:
             print(f"  ⚠️  LLM generation failed: {e}", flush=True)
+            _generation_available = False
             answer = contexts[0]
     else:
         answer = contexts[0] if contexts else "Không tìm thấy thông tin."
@@ -113,7 +122,7 @@ def evaluate_pipeline(search: HybridSearch, reranker: CrossEncoderReranker):
         s = results.get(m, 0)
         print(f"  {'✓' if s >= 0.75 else '✗'} {m}: {s:.4f}")
 
-    failures = failure_analysis(results.get("per_question", []))
+    failures = failure_analysis(results.get("per_question", []), bottom_n=5)
     save_report(results, failures)
     return results
 

@@ -6,5 +6,6 @@
     "context_recall": 0.0
   },
   "num_questions": 0,
-  "failures": []
+  "failures": [],
+  "evaluation_note": "LLM evaluation is configured for OpenRouter free routing (inclusionai/ling-3.1-flash), not OpenAI; embeddings use local BAAI/bge-m3."
 }

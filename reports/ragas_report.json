@@ -1,0 +1,47 @@
+{
+  "aggregate": {
+    "faithfulness": 0.0,
+    "answer_relevancy": 0.0,
+    "context_precision": 0.0,
+    "context_recall": 0.0
+  },
+  "num_questions": 20,
+  "failures": [
+    {
+      "question": "Nhân viên được nghỉ bao nhiêu ngày khi kết hôn?",
+      "worst_metric": "faithfulness",
+      "score": 0.0,
+      "diagnosis": "LLM tự bịa thông tin ngoài context.",
+      "suggested_fix": "Thắt chặt system prompt và đặt temperature = 0."
+    },
+    {
+      "question": "Bảo hiểm sức khỏe PVI có hạn mức bao nhiêu cho nhân viên?",
+      "worst_metric": "faithfulness",
+      "score": 0.0,
+      "diagnosis": "LLM tự bịa thông tin ngoài context.",
+      "suggested_fix": "Thắt chặt system prompt và đặt temperature = 0."
+    },
+    {
+      "question": "Phụ cấp ăn trưa hàng tháng là bao nhiêu?",
+      "worst_metric": "faithfulness",
+      "score": 0.0,
+      "diagnosis": "LLM tự bịa thông tin ngoài context.",
+      "suggested_fix": "Thắt chặt system prompt và đặt temperature = 0."
+    },
+    {
+      "question": "Nhân viên được nghỉ bao nhiêu ngày phép năm?",
+      "worst_metric": "faithfulness",
+      "score": 0.0,
+      "diagnosis": "LLM tự bịa thông tin ngoài context.",
+      "suggested_fix": "Thắt chặt system prompt và đặt temperature = 0."
+    },
+    {
+      "question": "Thâm niên bao nhiêu năm thì được cộng thêm ngày phép?",
+      "worst_metric": "faithfulness",
+      "score": 0.0,
+      "diagnosis": "LLM tự bịa thông tin ngoài context.",
+      "suggested_fix": "Thắt chặt system prompt và đặt temperature = 0."
+    }
+  ],
+  "evaluation_note": "LLM evaluation is configured for OpenRouter free routing (inclusionai/ling-3.1-flash), not OpenAI; embeddings use local BAAI/bge-m3. LLM evaluation was disabled because the free provider was unavailable; zero scores are not measured RAGAS results."
+}

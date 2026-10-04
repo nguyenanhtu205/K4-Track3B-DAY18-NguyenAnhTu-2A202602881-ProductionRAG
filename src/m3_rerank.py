@@ -68,10 +68,29 @@ class FlashrankReranker:
         self._model = None
 
     def rerank(self, query: str, documents: list[dict], top_k: int = RERANK_TOP_K) -> list[RerankResult]:
-        # TODO (optional): from flashrank import Ranker, RerankRequest
-        # model = Ranker(); passages = [{"text": d["text"]} for d in documents]
-        # results = model.rerank(RerankRequest(query=query, passages=passages))
-        return []
+        if not documents or top_k <= 0:
+            return []
+        if self._model is None:
+            from flashrank import Ranker
+            self._model = Ranker()
+        from flashrank import RerankRequest
+
+        passages = [
+            {"id": index, "text": document["text"]}
+            for index, document in enumerate(documents)
+        ]
+        results = self._model.rerank(RerankRequest(query=query, passages=passages))
+        output = []
+        for rank, result in enumerate(results[:top_k]):
+            document = documents[int(result["id"])]
+            output.append(RerankResult(
+                text=document["text"],
+                original_score=float(document.get("score", 0.0)),
+                rerank_score=float(result["score"]),
+                metadata=document.get("metadata", {}),
+                rank=rank,
+            ))
+        return output
 
 
 def benchmark_reranker(reranker, query: str, documents: list[dict], n_runs: int = 5) -> dict:

@@ -17,7 +17,8 @@ if hasattr(sys.stderr, "reconfigure"):
 from dataclasses import dataclass, field
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from config import OPENAI_API_KEY, OPENROUTER_BASE_URL, OPENROUTER_MODEL
+from config import (OPENAI_API_KEY, OPENROUTER_BASE_URL, OPENROUTER_ENABLE_LLM_CALLS,
+                    OPENROUTER_MODEL)
 
 
 _api_unavailable = False
@@ -37,13 +38,14 @@ class EnrichedChunk:
 def _chat(messages: list[dict], max_tokens: int) -> str | None:
     """Call the configured OpenAI-compatible provider, with a safe fallback."""
     global _api_unavailable
-    if not OPENAI_API_KEY or _api_unavailable:
+    if not OPENAI_API_KEY or not OPENROUTER_ENABLE_LLM_CALLS or _api_unavailable:
         return None
     try:
         from openai import OpenAI
 
         response = OpenAI(
-            api_key=OPENAI_API_KEY, base_url=OPENROUTER_BASE_URL
+            api_key=OPENAI_API_KEY, base_url=OPENROUTER_BASE_URL,
+            timeout=15, max_retries=0,
         ).chat.completions.create(
             model=OPENROUTER_MODEL,
             messages=messages,

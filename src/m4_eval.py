@@ -11,7 +11,7 @@ from dataclasses import dataclass
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from config import (EMBEDDING_MODEL, OPENAI_API_KEY, OPENROUTER_BASE_URL,
-                    OPENROUTER_MODEL, TEST_SET_PATH)
+                    OPENROUTER_MODEL, RAGAS_ENABLE_LLM_EVALUATION, TEST_SET_PATH)
 
 
 @dataclass
@@ -39,6 +39,16 @@ def evaluate_ragas(questions: list[str], answers: list[str],
         "faithfulness", "answer_relevancy", "context_precision", "context_recall"
     )
     empty_result = {name: 0.0 for name in metric_names} | {"per_question": []}
+
+    if not RAGAS_ENABLE_LLM_EVALUATION:
+        print("  ⚠️  RAGAS LLM evaluation is disabled; returning zero metrics.")
+        unavailable_results = [
+            EvalResult(question, answer, context, ground_truth, 0.0, 0.0, 0.0, 0.0)
+            for question, answer, context, ground_truth in zip(
+                questions, answers, contexts, ground_truths
+            )
+        ]
+        return empty_result | {"per_question": unavailable_results}
 
     if not (len(questions) == len(answers) == len(contexts) == len(ground_truths)):
         print("  ⚠️  RAGAS evaluation skipped: input lists have different lengths.")
@@ -164,7 +174,10 @@ def save_report(results: dict, failures: list[dict], path: str = "reports/ragas_
         "failures": failures,
         "evaluation_note": (
             f"LLM evaluation is configured for OpenRouter free routing "
-            f"({OPENROUTER_MODEL}), not OpenAI; embeddings use local {EMBEDDING_MODEL}."
+            f"({OPENROUTER_MODEL}), not OpenAI; embeddings use local {EMBEDDING_MODEL}. "
+            + ("LLM evaluation was disabled because the free provider was unavailable; "
+               "zero scores are not measured RAGAS results."
+               if not RAGAS_ENABLE_LLM_EVALUATION else "")
         ),
     }
     with open(path, "w", encoding="utf-8") as f:
